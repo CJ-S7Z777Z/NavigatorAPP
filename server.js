@@ -13,7 +13,7 @@ bot.start((ctx) => {
         [
           { 
             text: 'Открыть карту', 
-            web_app: { url: 'https://https://navigatorapp-production.up.railway.app//' } 
+            web_app: { url: 'https://https://navigatorapp-production.up.railway.app/' } 
           }
         ]
       ],
