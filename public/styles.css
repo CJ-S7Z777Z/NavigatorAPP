@@ -2,21 +2,29 @@ body, html {
   margin: 0;
   padding: 0;
   height: 100%;
-  overflow: hidden; /* Чтобы избежать прокрутки */
+  overflow: hidden; /* Избегаем прокрутки */
 }
 
 #map { 
-  height: calc(100% - 60px); /* Учитываем высоту хедера */
-  width: 100%;
+  position: absolute;
+  top: 60px; /* Учитываем высоту хедера */
+  left: 0;
+  right: 0;
+  bottom: 0;
 }
 
 #header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
   display: flex;
   align-items: center;
   padding: 10px;
   background-color: #ffffff;
   height: 60px;
   box-sizing: border-box;
+  z-index: 1000; /* Чтобы быть поверх карты */
 }
 
 #avatar {
@@ -46,6 +54,7 @@ body, html {
   display: flex;
   align-items: center;
   justify-content: center;
+  z-index: 1000; /* Чтобы быть поверх карты */
 }
 
 #locate-button i {
