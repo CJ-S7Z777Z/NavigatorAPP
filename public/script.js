@@ -87,25 +87,24 @@ function init() {
       switch (mapType) {
         case 'map':
           myMap.setType('yandex#map');
+          myMap.container.getElement().style.filter = ''; // Сбрасываем фильтр
           break;
         case 'satellite':
           myMap.setType('yandex#satellite');
+          myMap.container.getElement().style.filter = ''; // Сбрасываем фильтр
           break;
         case 'hybrid':
           myMap.setType('yandex#hybrid');
+          myMap.container.getElement().style.filter = ''; // Сбрасываем фильтр
           break;
         case 'dark':
           myMap.setType('yandex#map');
-          ymaps.borders.load('RU', {
-            lang: 'ru',
-            quality: 2
-          }).then(function (result) {
-            myMap.geoObjects.add(result);
-            myMap.panes.get('ground').getElement().style.filter = 'invert(100%) hue-rotate(180deg)';
-          });
+          // Применяем тёмный стиль через CSS-фильтр
+          myMap.container.getElement().style.filter = 'invert(1) hue-rotate(180deg)';
           break;
         default:
           myMap.setType('yandex#map');
+          myMap.container.getElement().style.filter = ''; // Сбрасываем фильтр
       }
       closeMenu('settings-menu');
     });
@@ -113,71 +112,94 @@ function init() {
 
   // Обработка поисковых запросов
   document.getElementById('search-input').addEventListener('input', function() {
-    var query = this.value;
+    var query = this.value.trim();
     if (query.length > 3) {
-      ymaps.geocode(query).then(function (res) {
+      ymaps.geocode(query, { results: 5 }).then(function (res) {
         var items = res.geoObjects.toArray();
         var resultsContainer = document.getElementById('search-results');
         resultsContainer.innerHTML = '';
-        items.forEach(function (item) {
-          var address = item.getAddressLine();
-          var coords = item.geometry.getCoordinates();
-          var li = document.createElement('li');
-          li.textContent = address;
-          li.addEventListener('click', function () {
-            myMap.setCenter(coords, 15);
-            addUserMarker(myMap, coords);
-            closeMenu('search-menu');
+        if (items.length > 0) {
+          items.forEach(function (item) {
+            var address = item.getAddressLine();
+            var coords = item.geometry.getCoordinates();
+            var li = document.createElement('li');
+            li.textContent = address;
+            li.addEventListener('click', function () {
+              myMap.setCenter(coords, 15);
+              addUserMarker(myMap, coords);
+              closeMenu('search-menu');
+            });
+            resultsContainer.appendChild(li);
           });
+        } else {
+          var li = document.createElement('li');
+          li.textContent = 'Ничего не найдено';
           resultsContainer.appendChild(li);
-        });
+        }
+      }).catch(function(error) {
+        console.error('Ошибка при выполнении геокодирования:', error);
       });
+    } else {
+      // Очищаем результаты поиска, если запрос короткий
+      document.getElementById('search-results').innerHTML = '';
     }
   });
-}
 
-// Обработка кнопок меню
-document.getElementById('profile-button').addEventListener('click', function() {
-  openMenu('profile-menu');
-});
+  // Обработка кнопок меню
+  document.getElementById('profile-button').addEventListener('click', function() {
+    openMenu('profile-menu');
+  });
 
-document.getElementById('settings-button').addEventListener('click', function() {
-  openMenu('settings-menu');
-});
+  document.getElementById('settings-button').addEventListener('click', function() {
+    openMenu('settings-menu');
+  });
 
-document.getElementById('search-button').addEventListener('click', function() {
-  openMenu('search-menu');
-});
+  document.getElementById('search-button').addEventListener('click', function() {
+    openMenu('search-menu');
+    // Очищаем предыдущий поиск
+    document.getElementById('search-input').value = '';
+    document.getElementById('search-results').innerHTML = '';
+  });
 
-// Функции открытия и закрытия меню
-function openMenu(menuId) {
-  var menu = document.getElementById(menuId);
-  menu.classList.add('active');
-}
+  // Функции открытия и закрытия меню
+  function openMenu(menuId) {
+    var menu = document.getElementById(menuId);
+    menu.classList.add('active');
+  }
 
-function closeMenu(menuId) {
-  var menu = document.getElementById(menuId);
-  menu.classList.remove('active');
-}
-
-// Обработка кнопок закрытия меню
-document.querySelectorAll('.close-button').forEach(button => {
-  button.addEventListener('click', function() {
-    var menu = this.closest('.slide-up');
+  function closeMenu(menuId) {
+    var menu = document.getElementById(menuId);
     menu.classList.remove('active');
-  });
-});
+  }
 
-// Обработка свайпа вниз для закрытия меню
-document.querySelectorAll('.slide-up').forEach(menu => {
-  var startY = 0;
-  menu.addEventListener('touchstart', function(e) {
-    startY = e.touches[0].clientY;
-  });
-  menu.addEventListener('touchmove', function(e) {
-    var currentY = e.touches[0].clientY;
-    if (currentY - startY > 100) { // Если свайп вниз больше 100px
+  // Инициализация меню (закрытие всех меню при загрузке)
+  function initializeMenus() {
+    closeMenu('profile-menu');
+    closeMenu('settings-menu');
+    closeMenu('search-menu');
+  }
+
+  initializeMenus();
+
+  // Обработка кнопок закрытия меню
+  document.querySelectorAll('.close-button').forEach(button => {
+    button.addEventListener('click', function() {
+      var menu = this.closest('.slide-up');
       menu.classList.remove('active');
-    }
+    });
   });
-});
+
+  // Обработка свайпа вниз для закрытия меню
+  document.querySelectorAll('.slide-up').forEach(menu => {
+    var startY = 0;
+    menu.addEventListener('touchstart', function(e) {
+      startY = e.touches[0].clientY;
+    });
+    menu.addEventListener('touchmove', function(e) {
+      var currentY = e.touches[0].clientY;
+      if (currentY - startY > 50) { // Если свайп вниз больше 50px
+        menu.classList.remove('active');
+      }
+    });
+  });
+}
