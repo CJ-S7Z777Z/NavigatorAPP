@@ -9,14 +9,16 @@ const bot = new Telegraf('7895272383:AAG9RKIZ3Mw95bzOgBj3-TwvHc9ilAB2o2U');
 bot.start((ctx) => {
   ctx.reply('Запуск мини-приложения', {
     reply_markup: {
-      inline_keyboard: [
+      keyboard: [
         [
           { 
             text: 'Открыть карту', 
-            web_app: { url: 'https://navigatorapp-production.up.railway.app/' } 
+            web_app: { url: 'https://https://navigatorapp-production.up.railway.app//' } 
           }
         ]
-      ]
+      ],
+      resize_keyboard: true,
+      one_time_keyboard: true
     }
   });
 });
