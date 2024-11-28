@@ -1,49 +1,88 @@
-
-// Инициализация Telegram WebApp
+// Initialize Telegram WebApp
 let tg = window.Telegram.WebApp;
 
-// Запрашиваем полноэкранный режим
+// Request fullscreen mode
 if (tg.requestFullscreen) {
   tg.requestFullscreen();
 } else {
   tg.expand();
 }
 
-// Получаем данные пользователя
+// Get user data
 let user = tg.initDataUnsafe.user;
 
-// Устанавливаем аватар и имя пользователя в меню профиля
-document.getElementById('profile-name').innerText = `${user.first_name} ${user.last_name || ''}`;
-document.getElementById('profile-avatar').src = user.photo_url || 'default_avatar.png'; // Используйте изображение по умолчанию, если аватарки нет
+// Set user avatar and name
+document.getElementById('username').innerText = `${user.first_name} ${user.last_name || ''}`;
+document.getElementById('avatar').src = user.photo_url || 'default_avatar.png'; // Use default if no avatar
 
-// Инициализация карты Яндекса
+// Initialize Yandex Map
 ymaps.ready(init);
 
 function init() {
+  // Create the map instance
   var myMap = new ymaps.Map("map", {
-    center: [55.751244, 37.618423], // Москва по умолчанию
+    center: [55.751244, 37.618423], // Default to Moscow
     zoom: 10,
     controls: []
   });
 
-  // Кнопки управления масштабом
-  document.getElementById('zoom-in').addEventListener('click', function() {
-    myMap.setZoom(myMap.getZoom() + 1, { duration: 300 });
+  // Add controls
+  myMap.controls.add('zoomControl', {
+    position: {
+      right: 20,
+      bottom: 180
+    }
   });
 
-  document.getElementById('zoom-out').addEventListener('click', function() {
-    myMap.setZoom(myMap.getZoom() - 1, { duration: 300 });
+  // Create locate button
+  var locateButton = new ymaps.control.Button({
+    data: { image: '', title: 'Моё местоположение' },
+    options: {
+      layout: ymaps.templateLayoutFactory.createClass('<div id="custom-locate-button"><i class="fa-solid fa-location-arrow"></i></div>'),
+      maxWidth: [50]
+    }
+  });
+  myMap.controls.add(locateButton, {
+    position: {
+      right: 20,
+      bottom: 120
+    }
   });
 
-  // Кнопка определения местоположения
-  document.getElementById('locate-button').addEventListener('click', function() {
+  // Handle locate button click
+  locateButton.events.add('click', function () {
     requestGeoLocation(myMap);
   });
 
-  // Функция запроса геолокации
+  // Map type buttons
+  var mapTypeButtons = document.querySelectorAll('.map-type-button');
+  mapTypeButtons.forEach(button => {
+    button.addEventListener('click', function () {
+      var mapType = this.getAttribute('data-type');
+      switch (mapType) {
+        case 'map':
+          myMap.setType('yandex#map');
+          break;
+        case 'satellite':
+          myMap.setType('yandex#satellite');
+          break;
+        case 'hybrid':
+          myMap.setType('yandex#hybrid');
+          break;
+        case 'dark':
+          myMap.setType('yandex#map');
+          myMap.setMapStyle('dark');
+          break;
+        default:
+          myMap.setType('yandex#map');
+      }
+    });
+  });
+
+  // Function to request geolocation
   function requestGeoLocation(map) {
     if (tg.WebApp.isVersionAtLeast('6.1')) {
-      // Используем API геолокации Telegram
+      // Use Telegram's geolocation API if available
       tg.WebApp.requestGeoLocation('Для работы приложения необходимо предоставить доступ к геолокации.').then((geo) => {
         if (geo) {
           var userLocation = [geo.latitude, geo.longitude];
@@ -51,10 +90,10 @@ function init() {
           addUserMarker(map, userLocation);
         }
       }).catch((error) => {
-        console.error('Ошибка получения геолокации:', error);
+        console.error('Error obtaining geolocation:', error);
       });
     } else if (navigator.geolocation) {
-      // Используем API геолокации браузера
+      // Fallback to browser geolocation
       navigator.geolocation.getCurrentPosition(position => {
         var userLocation = [position.coords.latitude, position.coords.longitude];
         map.setCenter(userLocation, 15);
@@ -67,7 +106,7 @@ function init() {
     }
   }
 
-  // Функция добавления маркера пользователя
+  // Function to add user marker
   function addUserMarker(map, coords) {
     if (!window.userMarker) {
       window.userMarker = new ymaps.Placemark(coords, {}, {
@@ -80,126 +119,6 @@ function init() {
     }
   }
 
-  // Обработка выбора типа карты
-  document.querySelectorAll('.map-type-button').forEach(button => {
-    button.addEventListener('click', function() {
-      var mapType = this.getAttribute('data-type');
-      switch (mapType) {
-        case 'map':
-          myMap.setType('yandex#map');
-          myMap.container.getElement().style.filter = ''; // Сбрасываем фильтр
-          break;
-        case 'satellite':
-          myMap.setType('yandex#satellite');
-          myMap.container.getElement().style.filter = ''; // Сбрасываем фильтр
-          break;
-        case 'hybrid':
-          myMap.setType('yandex#hybrid');
-          myMap.container.getElement().style.filter = ''; // Сбрасываем фильтр
-          break;
-        case 'dark':
-          myMap.setType('yandex#map');
-          // Применяем тёмный стиль через CSS-фильтр
-          myMap.container.getElement().style.filter = 'invert(1) hue-rotate(180deg)';
-          break;
-        default:
-          myMap.setType('yandex#map');
-          myMap.container.getElement().style.filter = ''; // Сбрасываем фильтр
-      }
-      closeMenu('settings-menu');
-    });
-  });
-
-  // Обработка поисковых запросов
-  document.getElementById('search-input').addEventListener('input', function() {
-    var query = this.value.trim();
-    if (query.length > 3) {
-      ymaps.geocode(query, { results: 5 }).then(function (res) {
-        var items = res.geoObjects.toArray();
-        var resultsContainer = document.getElementById('search-results');
-        resultsContainer.innerHTML = '';
-        if (items.length > 0) {
-          items.forEach(function (item) {
-            var address = item.getAddressLine();
-            var coords = item.geometry.getCoordinates();
-            var li = document.createElement('li');
-            li.textContent = address;
-            li.addEventListener('click', function () {
-              myMap.setCenter(coords, 15);
-              addUserMarker(myMap, coords);
-              closeMenu('search-menu');
-            });
-            resultsContainer.appendChild(li);
-          });
-        } else {
-          var li = document.createElement('li');
-          li.textContent = 'Ничего не найдено';
-          resultsContainer.appendChild(li);
-        }
-      }).catch(function(error) {
-        console.error('Ошибка при выполнении геокодирования:', error);
-      });
-    } else {
-      // Очищаем результаты поиска, если запрос короткий
-      document.getElementById('search-results').innerHTML = '';
-    }
-  });
-
-  // Обработка кнопок меню
-  document.getElementById('profile-button').addEventListener('click', function() {
-    openMenu('profile-menu');
-  });
-
-  document.getElementById('settings-button').addEventListener('click', function() {
-    openMenu('settings-menu');
-  });
-
-  document.getElementById('search-button').addEventListener('click', function() {
-    openMenu('search-menu');
-    // Очищаем предыдущий поиск
-    document.getElementById('search-input').value = '';
-    document.getElementById('search-results').innerHTML = '';
-  });
-
-  // Функции открытия и закрытия меню
-  function openMenu(menuId) {
-    var menu = document.getElementById(menuId);
-    menu.classList.add('active');
-  }
-
-  function closeMenu(menuId) {
-    var menu = document.getElementById(menuId);
-    menu.classList.remove('active');
-  }
-
-  // Инициализация меню (закрытие всех меню при загрузке)
-  function initializeMenus() {
-    closeMenu('profile-menu');
-    closeMenu('settings-menu');
-    closeMenu('search-menu');
-  }
-
-  initializeMenus();
-
-  // Обработка кнопок закрытия меню
-  document.querySelectorAll('.close-button').forEach(button => {
-    button.addEventListener('click', function() {
-      var menu = this.closest('.slide-up');
-      menu.classList.remove('active');
-    });
-  });
-
-  // Обработка свайпа вниз для закрытия меню
-  document.querySelectorAll('.slide-up').forEach(menu => {
-    var startY = 0;
-    menu.addEventListener('touchstart', function(e) {
-      startY = e.touches[0].clientY;
-    });
-    menu.addEventListener('touchmove', function(e) {
-      var currentY = e.touches[0].clientY;
-      if (currentY - startY > 50) { // Если свайп вниз больше 50px
-        menu.classList.remove('active');
-      }
-    });
-  });
+  // Initial geolocation request
+  requestGeoLocation(myMap);
 }
