@@ -2,18 +2,18 @@ const express = require('express');
 const { Telegraf } = require('telegraf');
 const path = require('path');
 
-// Создаем бота
+// Create bot
 const bot = new Telegraf('7895272383:AAG9RKIZ3Mw95bzOgBj3-TwvHc9ilAB2o2U');
 
-// Обработчик команды /start
+// Handle /start command
 bot.start((ctx) => {
   ctx.reply('Запуск мини-приложения', {
     reply_markup: {
       keyboard: [
         [
-          { 
-            text: 'Открыть карту', 
-            web_app: { url: 'https://https://navigatorapp-production.up.railway.app/' } 
+          {
+            text: 'Открыть карту',
+            web_app: { url: 'https://https://navigatorapp-production.up.railway.app/' }
           }
         ]
       ],
@@ -23,17 +23,17 @@ bot.start((ctx) => {
   });
 });
 
-// Запуск бота
+// Launch bot
 bot.launch();
 
-// Создаем приложение Express
+// Create Express app
 const app = express();
 
-// Обслуживание статических файлов (HTML, CSS, JS)
+// Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Запуск сервера
+// Start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Сервер запущен на порту ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
