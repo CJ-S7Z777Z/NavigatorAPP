@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Telegram Mini App Map</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Подключаем Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <!-- Ваш CSS -->
+  <link rel="stylesheet" href="styles.css">
+  <!-- Telegram Web Apps SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+
+  <div id="header">
+    <img id="avatar" src="" alt="Avatar">
+    <span id="username"></span>
+  </div>
+
+  <div id="map"></div>
+
+  <button id="locate-button">Моё местоположение</button>
+
+  <!-- Подключаем Leaflet JS -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <!-- Ваш JS -->
+  <script src="script.js"></script>
+</body>
+</html>
