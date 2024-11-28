@@ -2,6 +2,7 @@ body, html {
   margin: 0;
   padding: 0;
   height: 100%;
+  overflow: hidden; /* Чтобы избежать прокрутки */
 }
 
 #map { 
@@ -15,6 +16,7 @@ body, html {
   padding: 10px;
   background-color: #ffffff;
   height: 60px;
+  box-sizing: border-box;
 }
 
 #avatar {
@@ -41,6 +43,9 @@ body, html {
   box-shadow: 0 2px 4px rgba(0,0,0,0.3);
   cursor: pointer;
   outline: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 #locate-button i {
