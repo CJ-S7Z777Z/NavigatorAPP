@@ -1,10 +1,13 @@
 // Инициализация Telegram WebApp
 let tg = window.Telegram.WebApp;
 
-// Устанавливаем полноэкранный режим
-tg.expand();
-// Или можно использовать метод requestFullscreen при необходимости
-// tg.requestFullscreen();
+// Устанавливаем обработчик событий на изменение полноэкранного режима
+tg.onEvent('fullscreenChanged', () => {
+  console.log('Полноэкранный режим изменён:', tg.isFullscreen);
+});
+
+// Запрашиваем полноэкранный режим
+tg.requestFullscreen();
 
 // Получаем данные пользователя
 let user = tg.initDataUnsafe.user;
@@ -25,9 +28,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 let userMarker = L.marker([0, 0]).addTo(map);
 
 // Функция обновления местоположения
-function updateLocation(position) {
-  let lat = position.coords.latitude;
-  let lon = position.coords.longitude;
+function updateLocation(lat, lon) {
   map.setView([lat, lon], 15);
   userMarker.setLatLng([lat, lon]);
 }
@@ -37,22 +38,42 @@ function locationError(error) {
   console.error('Ошибка получения геолокации:', error);
 }
 
-// Запрашиваем доступ к геолокации через Telegram
-tg.WebApp.location.request({
-  accuracy: 'city', // или 'street' в зависимости от необходимой точности
-  request_id: 'location_request' // уникальный идентификатор запроса
-});
+// Функция запроса геолокации через Telegram Web Apps
+function requestGeoLocation() {
+  // Проверяем, поддерживается ли LocationManager
+  if (tg.isVersionAtLeast('6.11')) {
+    // Добавляем обработчик события на обновление LocationManager
+    tg.onEvent('locationUpdated', (location) => {
+      console.log('Получено местоположение:', location);
+      updateLocation(location.latitude, location.longitude);
+    });
 
-// Событие обновления геолокации
-tg.WebApp.onEvent('locationChanged', (location) => {
-  updateLocation({ coords: { latitude: location.latitude, longitude: location.longitude } });
-});
+    // Запрашиваем доступ к геолокации
+    tg.requestLocation({
+      // Указываем необходимые параметры
+      accurate: true // или false, если нужна менее точная геолокация
+    }).then((location) => {
+      console.log('Местоположение получено:', location);
+      updateLocation(location.latitude, location.longitude);
+    }).catch((err) => {
+      console.error('Ошибка при запросе геолокации:', err);
+    });
+  } else {
+    // Если версия не поддерживает LocationManager, используем стандартный способ
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition((position) => {
+        updateLocation(position.coords.latitude, position.coords.longitude);
+      }, locationError);
+    } else {
+      alert('Геолокация не поддерживается вашим браузером.');
+    }
+  }
+}
+
+// При загрузке страницы запрашиваем геолокацию
+requestGeoLocation();
 
 // Обработчик нажатия на кнопку "Моё местоположение"
 document.getElementById('locate-button').addEventListener('click', () => {
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(updateLocation, locationError);
-  } else {
-    alert('Геолокация не поддерживается вашим браузером.');
-  }
+  requestGeoLocation();
 });
