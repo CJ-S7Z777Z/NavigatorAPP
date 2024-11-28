@@ -1,88 +1,124 @@
-// Инициализация Telegram WebApp
+// Initialize Telegram WebApp
 let tg = window.Telegram.WebApp;
 
-// Проверяем поддержку LocationManager
-const supportsLocationManager = tg.WebApp && tg.WebApp.location;
-
-// Проверяем поддержку полноэкранного режима
-const supportsFullscreen = typeof tg.requestFullscreen === 'function';
-
-// Устанавливаем обработчик событий на изменение полноэкранного режима
-if (supportsFullscreen) {
-  tg.onEvent('fullscreenChanged', () => {
-    console.log('Полноэкранный режим изменён:', tg.isFullscreen);
-  });
-
-  // Запрашиваем полноэкранный режим
+// Request fullscreen mode
+if (tg.requestFullscreen) {
   tg.requestFullscreen();
 } else {
-  tg.expand(); // Если нет поддержки, просто расширяем WebApp
+  tg.expand();
 }
 
-// Получаем данные пользователя
+// Get user data
 let user = tg.initDataUnsafe.user;
 
-// Устанавливаем аватар и имя пользователя
-document.getElementById('username').innerText = user.first_name + ' ' + (user.last_name || '');
-document.getElementById('avatar').src = `https://t.me/i/userpic/320/${user.id}.jpg`;
+// Set user avatar and name
+document.getElementById('username').innerText = `${user.first_name} ${user.last_name || ''}`;
+document.getElementById('avatar').src = user.photo_url || 'default_avatar.png'; // Use default if no avatar
 
-// Инициализируем карту
-let map = L.map('map').setView([55.751244, 37.618423], 13); // Москва по умолчанию
+// Initialize Yandex Map
+ymaps.ready(init);
 
-// Используем OpenStreetMap в качестве источника карт
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '', // Мы можем отключить атрибуцию в настройках, но важно указать её вручную
-  maxZoom: 19,
-}).addTo(map);
+function init() {
+  // Create the map instance
+  var myMap = new ymaps.Map("map", {
+    center: [55.751244, 37.618423], // Default to Moscow
+    zoom: 10,
+    controls: []
+  });
 
-// Добавляем атрибуцию вручную
-map.attributionControl.addAttribution('');
+  // Add controls
+  myMap.controls.add('zoomControl', {
+    position: {
+      right: 20,
+      bottom: 180
+    }
+  });
 
-// Создаем маркер пользователя
-let userMarker = L.marker([0, 0]).addTo(map);
+  // Create locate button
+  var locateButton = new ymaps.control.Button({
+    data: { image: '', title: 'Моё местоположение' },
+    options: {
+      layout: ymaps.templateLayoutFactory.createClass('<div id="custom-locate-button"><i class="fa-solid fa-location-arrow"></i></div>'),
+      maxWidth: [50]
+    }
+  });
+  myMap.controls.add(locateButton, {
+    position: {
+      right: 20,
+      bottom: 120
+    }
+  });
 
-// Функция обновления местоположения
-function updateLocation(lat, lon) {
-  map.setView([lat, lon], 15);
-  userMarker.setLatLng([lat, lon]);
-}
+  // Handle locate button click
+  locateButton.events.add('click', function () {
+    requestGeoLocation(myMap);
+  });
 
-// Обработчик ошибки
-function locationError(error) {
-  console.error('Ошибка получения геолокации:', error);
-  alert('Не удалось получить ваше местоположение.');
-}
-
-// Функция запроса геолокации через Telegram Web Apps
-function requestGeoLocation() {
-  if (supportsLocationManager) {
-    // Запрашиваем доступ к геолокации
-    tg.WebApp.requestLocation({
-      // Можем указать параметры, если они доступны
+  // Map type buttons
+  var mapTypeButtons = document.querySelectorAll('.map-type-button');
+  mapTypeButtons.forEach(button => {
+    button.addEventListener('click', function () {
+      var mapType = this.getAttribute('data-type');
+      switch (mapType) {
+        case 'map':
+          myMap.setType('yandex#map');
+          break;
+        case 'satellite':
+          myMap.setType('yandex#satellite');
+          break;
+        case 'hybrid':
+          myMap.setType('yandex#hybrid');
+          break;
+        case 'dark':
+          myMap.setType('yandex#map');
+          myMap.setMapStyle('dark');
+          break;
+        default:
+          myMap.setType('yandex#map');
+      }
     });
+  });
 
-    // Обрабатываем событие обновления местоположения
-    tg.WebApp.onEvent('locationChanged', (location) => {
-      console.log('Получено местоположение:', location);
-      updateLocation(location.latitude, location.longitude);
-    });
-  } else {
-    // Если версия Telegram не поддерживает LocationManager
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition((position) => {
-        updateLocation(position.coords.latitude, position.coords.longitude);
-      }, locationError);
+  // Function to request geolocation
+  function requestGeoLocation(map) {
+    if (tg.WebApp.isVersionAtLeast('6.1')) {
+      // Use Telegram's geolocation API if available
+      tg.WebApp.requestGeoLocation('Для работы приложения необходимо предоставить доступ к геолокации.').then((geo) => {
+        if (geo) {
+          var userLocation = [geo.latitude, geo.longitude];
+          map.setCenter(userLocation, 15);
+          addUserMarker(map, userLocation);
+        }
+      }).catch((error) => {
+        console.error('Error obtaining geolocation:', error);
+      });
+    } else if (navigator.geolocation) {
+      // Fallback to browser geolocation
+      navigator.geolocation.getCurrentPosition(position => {
+        var userLocation = [position.coords.latitude, position.coords.longitude];
+        map.setCenter(userLocation, 15);
+        addUserMarker(map, userLocation);
+      }, error => {
+        alert('Не удалось получить ваше местоположение.');
+      });
     } else {
       alert('Геолокация не поддерживается вашим устройством.');
     }
   }
+
+  // Function to add user marker
+  function addUserMarker(map, coords) {
+    if (!window.userMarker) {
+      window.userMarker = new ymaps.Placemark(coords, {}, {
+        preset: 'islands#blueCircleIcon',
+        iconColor: '#1E98FF'
+      });
+      map.geoObjects.add(window.userMarker);
+    } else {
+      window.userMarker.geometry.setCoordinates(coords);
+    }
+  }
+
+  // Initial geolocation request
+  requestGeoLocation(myMap);
 }
-
-// Обработчик нажатия на кнопку "Моё местоположение"
-document.getElementById('locate-button').addEventListener('click', () => {
-  requestGeoLocation();
-});
-
-// При загрузке страницы запрашиваем геолокацию
-requestGeoLocation();
-
