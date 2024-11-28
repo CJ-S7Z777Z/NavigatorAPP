@@ -6,6 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <!-- Подключаем Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <!-- Подключаем Font Awesome для иконки -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- Ваш CSS -->
   <link rel="stylesheet" href="styles.css">
   <!-- Telegram Web Apps SDK -->
@@ -20,7 +22,10 @@
 
   <div id="map"></div>
 
-  <button id="locate-button">Моё местоположение</button>
+  <!-- Кнопка для определения местоположения -->
+  <button id="locate-button" title="Моё местоположение">
+    <i class="fa-solid fa-location-arrow"></i>
+  </button>
 
   <!-- Подключаем Leaflet JS -->
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
