@@ -36,7 +36,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 }).addTo(map);
 
 // Добавляем атрибуцию вручную
-map.attributionControl.addAttribution('&copy; OpenStreetMap');
+map.attributionControl.addAttribution('');
 
 // Создаем маркер пользователя
 let userMarker = L.marker([0, 0]).addTo(map);
